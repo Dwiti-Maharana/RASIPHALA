@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="or">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ଆଜିର ରାଶିଫଳ (Live AI) | Odia Horoscope</title>
+    <!-- Google Fonts for Odia -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Oriya:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Official Google AI SDK for Web -->
+    <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+        window.GoogleGenerativeAI = GoogleGenerativeAI;
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans Oriya', sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box; /* Ensure padding doesn't cause overflow */
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.97);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            border-left: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(8px);
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #1e3a8a;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        h1 span {
+            font-size: 0.5em;
+            color: #555;
+            font-weight: 400;
+        }
+        .controls {
+            margin: 25px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+        .controls label {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #444;
+        }
+        .controls input[type="date"] {
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-family: 'Noto Sans Oriya', sans-serif;
+            font-size: 1em;
+            width: 60%;
+            max-width: 250px;
+            transition: border-color 0.3s;
+        }
+        .controls input[type="date"]:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+        }
+        button {
+            background-image: linear-gradient(to right, #4e54c8 0%, #8f94fb 51%, #4e54c8 100%);
+            background-size: 200% auto;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-family: 'Noto Sans Oriya', sans-serif;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 15px 0 rgba(78, 84, 200, 0.4);
+            min-width: 150px; /* Ensure buttons have a minimum width */
+        }
+        button:hover {
+            background-position: right center;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            background-image: linear-gradient(to right, #808080 0%, #c0c0c0 100%);
+            box-shadow: none;
+        }
+        #next-rasi-btn {
+            display: none; /* Initially hidden */
+            background-image: linear-gradient(to right, #1D976C 0%, #93F9B9 51%, #1D976C 100%);
+            box-shadow: 0 4px 15px 0 rgba(29, 151, 108, 0.3);
+        }
+        #result-container {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #4e54c8;
+            text-align: left;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+        .loading-animation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #555;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid rgba(0,0,0,0.1); border-left-color: #4e54c8; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #result-container h2 { margin: 0 0 10px 0; color: #1e3a8a; font-size: 2em; }
+        #result-container .emoji { font-size: 2.5em; margin-right: 15px; }
+        #result-container .header { display: flex; align-items: center; margin-bottom: 10px; }
+        #result-container p { font-size: 1.1em; line-height: 1.8; margin: 0; color: #333; }
+        .error { color: #D8000C; background-color: #FFD2D2; padding: 15px; border-radius: 8px; }
+
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: translateY(0);
+        }
+        .modal-content h3 {
+            color: #1e3a8a;
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+        .modal-content p {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .modal-content button {
+            background-image: linear-gradient(to right, #4e54c8 0%, #8f94fb 51%, #4e54c8 100%);
+            background-size: 200% auto;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-family: 'Noto Sans Oriya', sans-serif;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(78, 84, 200, 0.3);
+        }
+        .modal-content button:hover {
+            background-position: right center;
+            transform: translateY(-1px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            h1 span {
+                font-size: 0.4em;
+            }
+            .controls input[type="date"] {
+                width: 80%;
+            }
+            .button-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            button {
+                width: 100%;
+                max-width: 250px; /* Limit width for very small screens */
+            }
+            #result-container {
+                padding: 15px;
+            }
+            #result-container h2 {
+                font-size: 1.5em;
+            }
+            #result-container .emoji {
+                font-size: 2em;
+            }
+            #result-container p {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 ଆଜିର ରାଶିଫଳ 🌟<br><span>(ଭଗବାନ ବ୍ରହ୍ମାଙ୍କ ଦ୍ୱାରା ଲିଖିତ)</span></h1>
+        <div class="controls">
+            <label for="date-input">ଅଜିର ତାରିଖ:</label>
+            <input type="date" id="date-input">
+        </div>
+        <div class="button-group">
+            <button id="generate-btn">ରାଶିଫଳ ଦେଖନ୍ତୁ</button>
+            <button id="next-rasi-btn">ପରବର୍ତ୍ତୀ ରାଶି →</button>
+        </div>
+        <div id="result-container">
+            <p>ଦୟାକରି ତାରିଖ ବାଛନ୍ତୁ ଏବଂ "ରାଶିଫଳ ଦେଖନ୍ତୁ" ବଟନ୍ ଦବାନ୍ତୁ।<br>
+            "ପରବର୍ତ୍ତୀ ରାଶି" ବଟନ୍ ସବୁବେଳେ ମେଷ ରାଶିରୁ ଆରମ୍ଭ କରି କ୍ରମାଗତ ଭାବରେ ରାଶିଫଳ ଦେଖାଇବ।</p>
+        </div>
+    </div>
+
+    <!-- Custom Message Box HTML -->
+    <div id="message-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title"></h3>
+            <p id="modal-message"></p>
+            <button id="modal-close-btn">ଠିକ୍ ଅଛି</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // ⚠️ STEP 1: Paste your Google Gemini API Key here
+        // IMPORTANT: For production, consider using a backend to secure your API key.
+        const YOUR_API_KEY = 'AIzaSyB9Ubdokp079xHuebLKJJiLge2BECsrmh8'; 
+        
+        // Array containing details for each zodiac sign (Rasi) in the requested sequence
+        const rasis = [
+            { nameOdia: "ମେଷ", nameEng: "Aries", emoji: "♈", start: { m: 3, d: 21 }, end: { m: 4, d: 19 } },
+            { nameOdia: "ବୃଷ", nameEng: "Taurus", emoji: "♉", start: { m: 4, d: 20 }, end: { m: 5, d: 20 } },
+            { nameOdia: "ମିଥୁନ", nameEng: "Gemini", emoji: "♊", start: { m: 5, d: 21 }, end: { m: 6, d: 20 } },
+            { nameOdia: "କର୍କଟ", nameEng: "Cancer", emoji: "♋", start: { m: 6, d: 21 }, end: { m: 7, d: 22 } },
+            { nameOdia: "ସିଂହ", nameEng: "Leo", emoji: "♌", start: { m: 7, d: 23 }, end: { m: 8, d: 22 } },
+            { nameOdia: "କନ୍ୟା", nameEng: "Virgo", emoji: "♍", start: { m: 8, d: 23 }, end: { m: 9, d: 22 } },
+            { nameOdia: "ତୁଳା", nameEng: "Libra", emoji: "♎", start: { m: 9, d: 23 }, end: { m: 10, d: 22 } },
+            { nameOdia: "ବିଛା", nameEng: "Scorpio", emoji: "♏", start: { m: 10, d: 23 }, end: { m: 11, d: 21 } },
+            { nameOdia: "ଧନୁ", nameEng: "Sagittarius", emoji: "♐", start: { m: 11, d: 22 }, end: { m: 12, d: 21 } },
+            { nameOdia: "ମକର", nameEng: "Capricorn", emoji: "♑", start: { m: 12, d: 22 }, end: { m: 1, d: 19 } },
+            { nameOdia: "କୁମ୍ଭ", nameEng: "Aquarius", emoji: "♒", start: { m: 1, d: 20 }, end: { m: 2, d: 18 } },
+            { nameOdia: "ମୀନ", nameEng: "Pisces", emoji: "♓", start: { m: 2, d: 19 }, end: { m: 3, d: 20 } }
+        ];
+
+        // Get references to DOM elements
+        const dateInput = document.getElementById('date-input');
+        const generateBtn = document.getElementById('generate-btn');
+        const nextRasiBtn = document.getElementById('next-rasi-btn');
+        const resultContainer = document.getElementById('result-container');
+        const messageModal = document.getElementById('message-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // This variable will manage the sequence for the "Next Rasi" button
+        // It's initialized to -1 to signify no Rasi has been cycled yet or a date-based lookup just occurred.
+        let currentCycleIndex = -1; 
+        let genAI, model; // Variables for Google Generative AI
+        let initialDateFormatted = ''; // To store the date initially set in the input
+
+        /**
+         * Displays a custom message box (modal).
+         * @param {string} title - The title for the message box.
+         * @param {string} message - The message content.
+         */
+        function showMessageBox(title, message) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            messageModal.classList.add('visible');
+        }
+
+        /**
+         * Hides the custom message box (modal).
+         */
+        function hideMessageBox() {
+            messageModal.classList.remove('visible');
+        }
+
+        // Event listener for closing the message box
+        modalCloseBtn.addEventListener('click', hideMessageBox);
+        messageModal.addEventListener('click', (e) => {
+            if (e.target === messageModal) { // Close only if clicking the overlay
+                hideMessageBox();
+            }
+        });
+
+        /**
+         * Initializes the Google Generative AI model.
+         * @returns {boolean} True if initialization is successful, false otherwise.
+         */
+        function initializeAI() {
+            try {
+                // Check if the GoogleGenerativeAI library is loaded
+                if (!window.GoogleGenerativeAI) {
+                    throw new Error("Google AI SDK failed to load. Check the import URL.");
+                }
+                genAI = new window.GoogleGenerativeAI(YOUR_API_KEY);
+                // Use gemini-1.5-flash model for content generation
+                model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                return true;
+            } catch (error) {
+                console.error("AI Initialization Error:", error);
+                resultContainer.innerHTML = `<div class="error">AI ମଡେଲ ଆରମ୍ଭ କରିବାରେ ତ୍ରୁଟି ହେଲା। ଦୟାକରି API କୀ' ଠିକ୍ ଅଛି କି ନାହିଁ ଯାଞ୍ଚ କରନ୍ତୁ।</div>`;
+                return false;
+            }
+        }
+
+        /**
+         * Creates a prompt for the AI model to generate a horoscope in Odia.
+         * @param {object} rasi - The Rasi object (e.g., { nameOdia: "ମେଷ", nameEng: "Aries" }).
+         * @returns {string} The formatted prompt string.
+         */
+        function createPrompt(rasi) {
+            return `You are a very helpful and wise Odia astrologer. Your name is Jyotirvidya.
+
+Generate today's Rasiphala (horoscope) for the zodiac sign "${rasi.nameOdia} (${rasi.nameEng})".
+
+Key Instructions:
+
+1. The response MUST be entirely in the Odia language and script.
+2. The horoscope must be around 100-120 words.
+3. The tone must be positive, encouraging, and provide practical advice.
+4. It should touch upon aspects like career (କର୍ମ), finance (ଅର୍ଥ), relationships (ସମ୍ପର୍କ), and health (ସ୍ୱାସ୍ଥ୍ୟ).
+5. Include one or two relevant emojis 💰, ❤️, 🙏, 💪, ✨ within the text to make it engaging.
+6. VERY IMPORTANT: Do NOT write any extra titles or introductory phrases like "Here is your horoscope" or "ଆଜିର ରାଶିଫଳ". Begin directly with the horoscope prediction itself.
+7. At last, suggest a lucky color for the day and also suggest which god to pray to for the day.
+8. Do not repeat the same advice or sentences from previous horoscopes for this sign. Make each prediction unique and fresh for today.`;
+        }
+
+        /**
+         * Determines the zodiac sign (Rasi) based on the provided date.
+         * @param {Date} date - The birth date provided by the user.
+         * @returns {number} The index of the Rasi in the `rasis` array, or -1 if not found.
+         */
+        function findRasiByDate(date) {
+            const month = date.getMonth() + 1; // getMonth() returns 0-11, so add 1 for 1-12
+            const day = date.getDate();
+
+            for (let i = 0; i < rasis.length; i++) {
+                const rasi = rasis[i];
+                // Special handling for Capricorn as its dates span across two years (Dec-Jan)
+                if (rasi.nameEng === "Capricorn") {
+                    if ((month === 12 && day >= rasi.start.d) || (month === 1 && day <= rasi.end.d)) {
+                        return i;
+                    }
+                } 
+                // For other signs, check if the date falls within the start and end month/day range
+                else if ((month === rasi.start.m && day >= rasi.start.d) || (month === rasi.end.m && day <= rasi.end.d)) {
+                    return i;
+                }
+            }
+            return -1; // Rasi not found for the given date
+        }
+
+        /**
+         * Shows a loading animation in the result container.
+         */
+        function showLoading() {
+            resultContainer.innerHTML = `<div class="loading-animation"><div class="spinner"></div><p>AI ରାଶିଫଳ ତିଆରି କରୁଛି...⏳</p></div>`;
+        }
+
+        /**
+         * Enables or disables the generate and next Rasi buttons.
+         * @param {boolean} disabled - True to disable, false to enable.
+         */
+        function setButtonsDisabled(disabled) {
+            generateBtn.disabled = disabled;
+            nextRasiBtn.disabled = disabled;
+        }
+
+        /**
+         * Main function to generate and display the horoscope for a given Rasi index.
+         * Handles API key check, AI initialization, loading state, and error display.
+         * @param {number} index - The index of the Rasi in the `rasis` array.
+         */
+        async function generateHoroscope(index) {
+            // Initialize AI model if not already done
+            if (!model && !initializeAI()) {
+                return; 
+            }
+            // Validate Rasi index
+            if (index < 0 || index >= rasis.length) return;
+
+            setButtonsDisabled(true); // Disable buttons during generation
+            showLoading(); // Show initial loading spinner and message
+
+            try {
+                const rasi = rasis[index];
+                const prompt = createPrompt(rasi);
+
+                // Start streaming content from the AI model
+                const result = await model.generateContentStream(prompt);
+
+                // Clear loading and display Rasi header immediately
+                resultContainer.innerHTML = `
+                    <div class="header">
+                        <span class="emoji">${rasi.emoji}</span>
+                        <h2>${rasi.nameOdia} ରାଶି</h2>
+                    </div>
+                    <p id="horoscope-text"></p> <!-- Placeholder for streaming text -->
+                `;
+                const horoscopeTextElement = document.getElementById('horoscope-text');
+
+                let fullText = '';
+                // Iterate over the stream of chunks and append them live
+                for await (const chunk of result.stream) {
+                    const chunkText = chunk.text();
+                    fullText += chunkText;
+                    horoscopeTextElement.textContent = fullText; // Update text content
+                }
+                nextRasiBtn.style.display = 'inline-block'; // Ensure button is visible after generation
+            } catch (error) {
+                console.error("Horoscope Generation Error:", error);
+                resultContainer.innerHTML = `<div class="error">ରାଶିଫଳ ଆଣିବାରେ ଏକ ତ୍ରୁଟି ହେଲା। ଦୟାକରି ପୃଷ୍ଠାକୁ ପୁନଃ-ଲୋଡ୍ କରନ୍ତୁ ଏବଂ ଯାଞ୍ଚ କରନ୍ତୁ ଯେ ଆପଣଙ୍କ API କୀ' ସକ୍ରିୟ ଅଛି।</div>`;
+            } finally {
+                setButtonsDisabled(false); // Re-enable buttons
+            }
+        }
+
+        // Function to format a date as YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Set the max date for the input to tomorrow's date and default value to today
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            initialDateFormatted = formatDate(today); // Store the initial formatted date
+            // Allow user to select up to tomorrow
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+            const maxDate = formatDate(tomorrow);
+            dateInput.setAttribute('max', maxDate);
+            dateInput.value = initialDateFormatted; // Set default value to today
+        });
+
+
+        // Event listener for the "Generate Horoscope" button
+        generateBtn.addEventListener('click', () => {
+            const dateValue = dateInput.value;
+            if (!dateValue) {
+                showMessageBox("ତାରିଖ ଆବଶ୍ୟକ", "ଦୟାକରି ଏକ ଜନ୍ମ ତାରିଖ ବାଛନ୍ତୁ!");
+                return;
+            }
+            const selectedDate = new Date(dateValue);
+            // Check for invalid date input
+            if (isNaN(selectedDate.getTime())) {
+                showMessageBox("ଅବୈଧ ତାରିଖ", "ଅବୈଧ ତାରିଖ ପ୍ରବେଶ ହୋଇଛି।");
+                return;
+            }
+
+            let rasiIndexToGenerate;
+            // If the date input value is the same as the initial default date (today's date),
+            // force the generation of Aries horoscope.
+            if (dateValue === initialDateFormatted) {
+                rasiIndexToGenerate = 0; // Aries is at index 0
+            } else {
+                // Otherwise, find the Rasi based on the selected custom date
+                rasiIndexToGenerate = findRasiByDate(selectedDate);
+            }
+            
+            if (rasiIndexToGenerate !== -1) {
+                generateHoroscope(rasiIndexToGenerate); // Generate horoscope for the determined Rasi
+                // Set currentCycleIndex to the Rasi that was just generated,
+                // so 'Next Rasi' button can continue from this point.
+                currentCycleIndex = rasiIndexToGenerate; 
+            } else {
+                resultContainer.innerHTML = `<p class="error">ଏହି ତାରିଖ ପାଇଁ କୌଣସି ରାଶି ମିଳିଲା ନାହିଁ।</p>`;
+                nextRasiBtn.style.display = 'none'; // Hide next Rasi button if no Rasi is found
+                currentCycleIndex = -1; // Reset cycle if no Rasi found
+            }
+        });
+
+        // Event listener for the "Next Rasi" button
+        nextRasiBtn.addEventListener('click', () => {
+            // If it's the very first click on "Next Rasi" or if the sequence was reset (e.g., after an invalid date lookup),
+            // start the cycle from Aries (index 0). Otherwise, just move to the next Rasi.
+            if (currentCycleIndex === -1) {
+                currentCycleIndex = 0;
+            } else {
+                currentCycleIndex = (currentCycleIndex + 1) % rasis.length;
+            }
+            generateHoroscope(currentCycleIndex); // Generate horoscope for the current Rasi in the cycle
+        });
+    </script>
+</body>
+</html>

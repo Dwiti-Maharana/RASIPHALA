@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ଆଜିର ରାଶିଫଳ (Live AI) | Odia Horoscope</title>
-    <!-- Google Fonts for Odia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Oriya:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Official Google AI SDK for Web -->
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
         window.GoogleGenerativeAI = GoogleGenerativeAI;
@@ -260,7 +258,6 @@
         </div>
     </div>
 
-    <!-- Custom Message Box HTML -->
     <div id="message-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 id="modal-title"></h3>
@@ -272,7 +269,7 @@
     <script type="module">
         // ⚠️ STEP 1: Paste your Google Gemini API Key here
         // IMPORTANT: For production, consider using a backend to secure your API key.
-        const YOUR_API_KEY = 'AIzaSyCJY4hDrH8yLsUj8CnRoMscDSBAmNQPTLk';
+        const YOUR_API_KEY = 'AIzaSyCJY4hDrH8yLsUj8CnRoMscDSBAmNQPTLk'; 
         
         // Array containing details for each zodiac sign (Rasi) in the requested sequence
         const rasis = [
@@ -337,6 +334,11 @@
          * @returns {boolean} True if initialization is successful, false otherwise.
          */
         function initializeAI() {
+            if (!YOUR_API_KEY || YOUR_API_KEY === 'YOUR_API_KEY') {
+                showMessageBox("API କୀ' ତ୍ରୁଟି", "ଦୟାକରି ଆପଣଙ୍କ Google Gemini API କୀ' 'YOUR_API_KEY' ପରିବର୍ତ୍ତେ `YOUR_API_KEY` ଭେରିଏବଲରେ ଲେଖନ୍ତୁ।");
+                resultContainer.innerHTML = `<div class="error">API କୀ' ସେଟ୍ ହୋଇନାହିଁ।</div>`;
+                return false;
+            }
             try {
                 // Check if the GoogleGenerativeAI library is loaded
                 if (!window.GoogleGenerativeAI) {
@@ -348,7 +350,7 @@
                 return true;
             } catch (error) {
                 console.error("AI Initialization Error:", error);
-                resultContainer.innerHTML = `<div class="error">AI ମଡେଲ ଆରମ୍ଭ କରିବାରେ ତ୍ରୁଟି ହେଲା। ଦୟାକରି API କୀ' ଠିକ୍ ଅଛି କି ନାହିଁ ଯାଞ୍ଚ କରନ୍ତୁ।</div>`;
+                resultContainer.innerHTML = `<div class="error">AI ମଡେଲ ଆରମ୍ଭ କରିବାରେ ତ୍ରୁଟି ହେଲା। ଦୟାକରି API କୀ' ଠିକ୍ ଅଛି କି ନାହିଁ ଯାଞ୍ଚ କରନ୍ତୁ ଏବଂ କନସୋଲରେ ତ୍ରୁଟି ଦେଖନ୍ତୁ।</div>`;
                 return false;
             }
         }
@@ -393,12 +395,32 @@ Key Instructions:
                     }
                 } 
                 // For other signs, check if the date falls within the start and end month/day range
-                else if ((month === rasi.start.m && day >= rasi.start.d) || (month === rasi.end.m && day <= rasi.end.d)) {
-                    return i;
+                else if ((month === rasi.start.m && day >= rasi.start.d && month === rasi.start.m) ||
+                         (month === rasi.end.m && day <= rasi.end.d && month === rasi.end.m) ||
+                         (month > rasi.start.m && month < rasi.end.m) ||
+                         (rasi.start.m > rasi.end.m && (month > rasi.start.m || month < rasi.end.m))) { // handles cross-year signs like Capricorn, but more broadly for any if start > end
+                     
+                    // More precise logic for general signs (not spanning year end like Capricorn)
+                    // This logic ensures that if start month is less than end month, it's a direct range check.
+                    // If start month is greater than end month, it implies a cross-year span.
+                    if (rasi.start.m < rasi.end.m) { // Normal case: e.g., Aries (March-April)
+                        if ((month === rasi.start.m && day >= rasi.start.d) ||
+                            (month === rasi.end.m && day <= rasi.end.d) ||
+                            (month > rasi.start.m && month < rasi.end.m)) {
+                            return i;
+                        }
+                    } else { // Cross-year case (e.g., Capricorn, Aquarius, Pisces)
+                        if ((month === rasi.start.m && day >= rasi.start.d) ||
+                            (month === rasi.end.m && day <= rasi.end.d) ||
+                            (month > rasi.start.m || month < rasi.end.m)) { // Dates between start month (late year) and end month (early next year)
+                            return i;
+                        }
+                    }
                 }
             }
             return -1; // Rasi not found for the given date
         }
+
 
         /**
          * Shows a loading animation in the result container.
@@ -423,14 +445,25 @@ Key Instructions:
          */
         async function generateHoroscope(index) {
             // Initialize AI model if not already done
-            if (!model && !initializeAI()) {
-                return; 
+            if (!model) {
+                if (!initializeAI()) {
+                    setButtonsDisabled(false); // Re-enable buttons if AI init failed
+                    return; 
+                }
             }
+            
             // Validate Rasi index
-            if (index < 0 || index >= rasis.length) return;
+            if (index < 0 || index >= rasis.length) {
+                resultContainer.innerHTML = `<p class="error">ରାଶିଫଳ ଖୋଜିବା ପାଇଁ ଅବୈଧ ଇଣ୍ଡେକ୍ସ।</p>`;
+                setButtonsDisabled(false);
+                return;
+            }
 
             setButtonsDisabled(true); // Disable buttons during generation
             showLoading(); // Show initial loading spinner and message
+
+            // Add a small delay to prevent rapid-fire requests when clicking "Next Rasi" repeatedly
+            await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay
 
             try {
                 const rasi = rasis[index];
@@ -445,8 +478,7 @@ Key Instructions:
                         <span class="emoji">${rasi.emoji}</span>
                         <h2>${rasi.nameOdia} ରାଶି</h2>
                     </div>
-                    <p id="horoscope-text"></p> <!-- Placeholder for streaming text -->
-                `;
+                    <p id="horoscope-text"></p> `;
                 const horoscopeTextElement = document.getElementById('horoscope-text');
 
                 let fullText = '';
@@ -459,7 +491,15 @@ Key Instructions:
                 nextRasiBtn.style.display = 'inline-block'; // Ensure button is visible after generation
             } catch (error) {
                 console.error("Horoscope Generation Error:", error);
-                resultContainer.innerHTML = `<div class="error">ରାଶିଫଳ ଆଣିବାରେ ଏକ ତ୍ରୁଟି ହେଲା। ଦୟାକରି ପୃଷ୍ଠାକୁ ପୁନଃ-ଲୋଡ୍ କରନ୍ତୁ ଏବଂ ଯାଞ୍ଚ କରନ୍ତୁ ଯେ ଆପଣଙ୍କ API କୀ' ସକ୍ରିୟ ଅଛି।</div>`;
+                let errorMessage = "ରାଶିଫଳ ଆଣିବାରେ ଏକ ତ୍ରୁଟି ହେଲା। ଦୟାକରି ପୃଷ୍ଠାକୁ ପୁନଃ-ଲୋଡ୍ କରନ୍ତୁ ଏବଂ ଯାଞ୍ଚ କରନ୍ତୁ ଯେ ଆପଣଙ୍କ API କୀ' ସକ୍ରିୟ ଅଛି ଏବଂ କୋଟା ଶେଷ ହୋଇନାହିଁ।";
+                if (error.message.includes("API key not valid")) {
+                    errorMessage = "ଆପଣଙ୍କ API କୀ' ଅବୈଧ। ଦୟାକରି ଏକ ସଠିକ୍ କୀ' ପ୍ରଦାନ କରନ୍ତୁ।";
+                } else if (error.message.includes("quota")) {
+                    errorMessage = "API କୋଟା ଶେଷ ହୋଇଛି। କିଛି ସମୟ ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ କିମ୍ବା ଆପଣଙ୍କ Google Cloud କୋଟା ଯାଞ୍ଚ କରନ୍ତୁ।";
+                } else if (error.message.includes("blocked")) {
+                     errorMessage = "ଅନୁରୋଧଟି ସୁରକ୍ଷା କାରଣରୁ ବ୍ଲକ୍ ହୋଇଛି। ବିଷୟବସ୍ତୁ ନୀତି ସହିତ ମଡେଲ୍ ପ୍ରମ୍ପ୍ଟ ଅନୁରୂପ ଅଛି କି ନାହିଁ ଯାଞ୍ଚ କରନ୍ତୁ।";
+                }
+                resultContainer.innerHTML = `<div class="error">${errorMessage}</div>`;
             } finally {
                 setButtonsDisabled(false); // Re-enable buttons
             }
@@ -500,6 +540,9 @@ Key Instructions:
                 return;
             }
 
+            // Reset currentCycleIndex for date-based lookup
+            currentCycleIndex = -1; 
+
             let rasiIndexToGenerate;
             // If the date input value is the same as the initial default date (today's date),
             // force the generation of Aries horoscope.
@@ -524,12 +567,12 @@ Key Instructions:
 
         // Event listener for the "Next Rasi" button
         nextRasiBtn.addEventListener('click', () => {
-            // If it's the very first click on "Next Rasi" or if the sequence was reset (e.g., after an invalid date lookup),
+            // If it's the very first click on "Next Rasi" or if the sequence was reset,
             // start the cycle from Aries (index 0). Otherwise, just move to the next Rasi.
-            if (currentCycleIndex === -1) {
+            if (currentCycleIndex === -1 || currentCycleIndex === rasis.length - 1) { // If last Rasi was shown, loop back to Aries
                 currentCycleIndex = 0;
             } else {
-                currentCycleIndex = (currentCycleIndex + 1) % rasis.length;
+                currentCycleIndex = (currentCycleIndex + 1); // Move to the next Rasi
             }
             generateHoroscope(currentCycleIndex); // Generate horoscope for the current Rasi in the cycle
         });

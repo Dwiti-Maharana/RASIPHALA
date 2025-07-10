@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ଆଜିର ରାଶିଫଳ (Live AI) | Odia Horoscope</title>
-    <!-- Google Fonts for Odia -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Oriya:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Official Google AI SDK for Web -->
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
         window.GoogleGenerativeAI = GoogleGenerativeAI;
@@ -260,7 +258,6 @@
         </div>
     </div>
 
-    <!-- Custom Message Box HTML -->
     <div id="message-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 id="modal-title"></h3>
@@ -270,16 +267,9 @@
     </div>
 
     <script type="module">
-        // ⚠️ STEP 1: Paste your Google Gemini API Keys here
-        // IMPORTANT: For production, consider using a backend to secure your API keys.
-        // If you only have one key, just put it in the array: ['YOUR_SINGLE_API_KEY']
-        const YOUR_API_KEYS = [
-            'AIzaSyB9Ubdokp079xHuebLKJJiLge2BECsrmh8', // Replace with your first API Key
-            'AIzaSyC5sWYBJvyF-FnazNZYe6SAAYY1RVzSpZk', // Replace with your second API Key
-            'AIzaSyCJY4hDrH8yLsUj8CnRoMscDSBAmNQPTLk', // Replace with your third API Key
-            'AIzaSyCuIDx7lpecHg5xi2z87xrmNABuap01cf8', // Replace with your fourth API Key
-            'AIzaSyDBKR0GlzhjPJ7mMjbQlYArruMEDZ68b0o'  // Replace with your fifth API Key
-        ];
+        // ⚠️ STEP 1: Paste your Google Gemini API Key here
+        // IMPORTANT: For production, consider using a backend to secure your API key.
+        const YOUR_API_KEY = 'AIzaSyC5sWYBJvyF-FnazNZYe6SAAYY1RVzSpZk'; 
         
         // Array containing details for each zodiac sign (Rasi) in the requested sequence
         const rasis = [
@@ -344,41 +334,17 @@
          * @returns {boolean} True if initialization is successful, false otherwise.
          */
         function initializeAI() {
-            if (!YOUR_API_KEYS || YOUR_API_KEYS.length === 0) {
-                showMessageBox("API କୀ' ତ୍ରୁଟି", "ଦୟାକରି ଆପଣଙ୍କ Google Gemini API କୀ' ଗୁଡ଼ିକୁ `YOUR_API_KEYS` ଭେରିଏବଲରେ ଲେଖନ୍ତୁ।");
+            if (!YOUR_API_KEY || YOUR_API_KEY === 'YOUR_API_KEY') {
+                showMessageBox("API କୀ' ତ୍ରୁଟି", "ଦୟାକରି ଆପଣଙ୍କ Google Gemini API କୀ' 'YOUR_API_KEY' ପରିବର୍ତ୍ତେ `YOUR_API_KEY` ଭେରିଏବଲରେ ଲେଖନ୍ତୁ।");
                 resultContainer.innerHTML = `<div class="error">API କୀ' ସେଟ୍ ହୋଇନାହିଁ।</div>`;
                 return false;
             }
-
-            // Check if all keys are still placeholders
-            const allKeysArePlaceholders = YOUR_API_KEYS.every(key => key.includes('YOUR_API_KEY'));
-            if (allKeysArePlaceholders) {
-                showMessageBox("API କୀ' ତ୍ରୁଟି", "ଦୟାକରି `YOUR_API_KEYS` ଭେରିଏବଲରେ ପ୍ରକୃତ Google Gemini API କୀ' ଗୁଡ଼ିକୁ ପ୍ରଦାନ କରନ୍ତୁ।");
-                resultContainer.innerHTML = `<div class="error">API କୀ' ଗୁଡ଼ିକ ସେଟ୍ ହୋଇନାହିଁ।</div>`;
-                return false;
-            }
-
             try {
                 // Check if the GoogleGenerativeAI library is loaded
                 if (!window.GoogleGenerativeAI) {
                     throw new Error("Google AI SDK failed to load. Check the import URL.");
                 }
-
-                // Get the current API key index from localStorage, default to 0
-                let currentKeyIndex = parseInt(localStorage.getItem('currentApiKeyIndex') || '0', 10);
-                if (currentKeyIndex >= YOUR_API_KEYS.length || isNaN(currentKeyIndex)) {
-                    currentKeyIndex = 0; // Reset if index is out of bounds or invalid
-                }
-
-                const apiKeyToUse = YOUR_API_KEYS[currentKeyIndex];
-                
-                // Increment index for next time, and wrap around if necessary
-                const nextKeyIndex = (currentKeyIndex + 1) % YOUR_API_KEYS.length;
-                localStorage.setItem('currentApiKeyIndex', nextKeyIndex.toString());
-
-                console.log(`Using API Key Index: ${currentKeyIndex}. Next key index will be: ${nextKeyIndex}`);
-
-                genAI = new window.GoogleGenerativeAI(apiKeyToUse);
+                genAI = new window.GoogleGenerativeAI(YOUR_API_KEY);
                 // Use gemini-1.5-flash model for content generation
                 model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
                 return true;
@@ -509,8 +475,7 @@ Key Instructions:
                         <span class="emoji">${rasi.emoji}</span>
                         <h2>${rasi.nameOdia} ରାଶି</h2>
                     </div>
-                    <p id="horoscope-text"></p> <!-- Placeholder for streaming text -->
-                `;
+                    <p id="horoscope-text"></p> `;
                 const horoscopeTextElement = document.getElementById('horoscope-text');
 
                 let fullText = '';

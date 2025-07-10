@@ -269,11 +269,7 @@
     <script type="module">
         // ⚠️ STEP 1: Paste your Google Gemini API Key here
         // IMPORTANT: For production, consider using a backend to secure your API key.
-<<<<<<< HEAD
         const YOUR_API_KEY = 'AIzaSyCJY4hDrH8yLsUj8CnRoMscDSBAmNQPTLk'; 
-=======
-        const YOUR_API_KEY = 'AIzaSyB9Ubdokp079xHuebLKJJiLge2BECsrmh8';
->>>>>>> 245c9adef21501b33a3d36dc76438ec91771cfb5
         
         // Array containing details for each zodiac sign (Rasi) in the requested sequence
         const rasis = [
@@ -402,21 +398,18 @@ Key Instructions:
                 else if ((month === rasi.start.m && day >= rasi.start.d && month === rasi.start.m) ||
                          (month === rasi.end.m && day <= rasi.end.d && month === rasi.end.m) ||
                          (month > rasi.start.m && month < rasi.end.m) ||
-                         (rasi.start.m > rasi.end.m && (month > rasi.start.m || month < rasi.end.m))) { // handles cross-year signs like Capricorn, but more broadly for any if start > end
+                         (rasi.start.m > rasi.end.m && (month > rasi.start.m || month < rasi.end.m))) { 
                      
-                    // More precise logic for general signs (not spanning year end like Capricorn)
-                    // This logic ensures that if start month is less than end month, it's a direct range check.
-                    // If start month is greater than end month, it implies a cross-year span.
-                    if (rasi.start.m < rasi.end.m) { // Normal case: e.g., Aries (March-April)
+                    if (rasi.start.m < rasi.end.m) { 
                         if ((month === rasi.start.m && day >= rasi.start.d) ||
                             (month === rasi.end.m && day <= rasi.end.d) ||
                             (month > rasi.start.m && month < rasi.end.m)) {
                             return i;
                         }
-                    } else { // Cross-year case (e.g., Capricorn, Aquarius, Pisces)
+                    } else { 
                         if ((month === rasi.start.m && day >= rasi.start.d) ||
                             (month === rasi.end.m && day <= rasi.end.d) ||
-                            (month > rasi.start.m || month < rasi.end.m)) { // Dates between start month (late year) and end month (early next year)
+                            (month > rasi.start.m || month < rasi.end.m)) { 
                             return i;
                         }
                     }
@@ -517,16 +510,12 @@ Key Instructions:
             return `${year}-${month}-${day}`;
         }
 
-        // Set the max date for the input to tomorrow's date and default value to today
+        // Set the default date for the input to today
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
             initialDateFormatted = formatDate(today); // Store the initial formatted date
-            // Allow user to select up to tomorrow
-            const tomorrow = new Date(today);
-            tomorrow.setDate(today.getDate() + 1);
-            const maxDate = formatDate(tomorrow);
-            dateInput.setAttribute('max', maxDate);
             dateInput.value = initialDateFormatted; // Set default value to today
+            // The 'max' attribute is intentionally removed here to allow all dates.
         });
 
 
@@ -544,29 +533,13 @@ Key Instructions:
                 return;
             }
 
-            // Reset currentCycleIndex for date-based lookup
-            currentCycleIndex = -1; 
-
-            let rasiIndexToGenerate;
-            // If the date input value is the same as the initial default date (today's date),
-            // force the generation of Aries horoscope.
-            if (dateValue === initialDateFormatted) {
-                rasiIndexToGenerate = 0; // Aries is at index 0
-            } else {
-                // Otherwise, find the Rasi based on the selected custom date
-                rasiIndexToGenerate = findRasiByDate(selectedDate);
-            }
+            // Always start with Aries (index 0) when "Generate Horoscope" is clicked
+            const rasiIndexToGenerate = 0; 
             
-            if (rasiIndexToGenerate !== -1) {
-                generateHoroscope(rasiIndexToGenerate); // Generate horoscope for the determined Rasi
-                // Set currentCycleIndex to the Rasi that was just generated,
-                // so 'Next Rasi' button can continue from this point.
-                currentCycleIndex = rasiIndexToGenerate; 
-            } else {
-                resultContainer.innerHTML = `<p class="error">ଏହି ତାରିଖ ପାଇଁ କୌଣସି ରାଶି ମିଳିଲା ନାହିଁ।</p>`;
-                nextRasiBtn.style.display = 'none'; // Hide next Rasi button if no Rasi is found
-                currentCycleIndex = -1; // Reset cycle if no Rasi found
-            }
+            generateHoroscope(rasiIndexToGenerate); 
+            // Set currentCycleIndex to the Rasi that was just generated (Aries),
+            // so 'Next Rasi' button can continue from this point.
+            currentCycleIndex = rasiIndexToGenerate; 
         });
 
         // Event listener for the "Next Rasi" button
